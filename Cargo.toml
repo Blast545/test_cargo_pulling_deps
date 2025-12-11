@@ -1,0 +1,11 @@
+[package]
+name = "my-testing-app"
+version = "0.1.0"
+
+[dependencies]
+# Pulls from crates.io (standard)
+serde = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+
+# Pulls from a local directory source
+my-rust-utils-pkg = { registry = "my-curated-ros-registry", version = "1.0.0"}

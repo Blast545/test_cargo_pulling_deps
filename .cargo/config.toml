@@ -1,0 +1,9 @@
+[registries]
+my-curated-ros-registry = { index = "https://non-existent-intranet:8080/git/index" }
+
+[source.my-curated-ros-registry]
+registry = "https://non-existent-intranet:8080/git/index"
+replace-with = "local-mirror"
+
+[source.local-mirror]
+directory = "deps"
