@@ -53,9 +53,10 @@ jobs:
       
       - name: Dependencies fetcher
         run: |
-          ls -la
+          set -x
           cd $GITHUB_WORKSPACE/bundler_tool
           ls -la
+          ls -la /home/runner
           cargo vendor --manifest-path Cargo.toml $GITHUB_WORKSPACE/my-testing-app/deps
           ls -la $GITHUB_WORKSPACE/my-testing-app/deps
 
