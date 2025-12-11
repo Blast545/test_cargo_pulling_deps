@@ -1,0 +1,67 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-24.04
+
+    steps:
+
+      # Code of this repo
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+        with:
+          path: my-testing-app
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # Make the source code of the dependencies available locally
+      - name: Checkout deps code (one specific dep)
+        uses: actions/checkout@v4
+        with:
+          repository: Blast545/my-rust-utils-pkg
+          path: my-rust-utils-pkg
+
+      # Feth the "bundler tool". This is just a hack to show that we can mix crates.io deps
+      # with local dependencies
+      - name: Checkout bundler
+        uses: actions/checkout@v4
+        with:
+          repository: Blast545/bundler_tool # Replace with actual owner/repo
+          path: bundler_tool
+
+
+      ## ***Fetching local dependencies into deps***
+      # I'm using this "bundler tool" to "fetch" the repos locally into the workspace of our target application
+      # Currently this is hardcoded in the [dependencies] of the bundler manifest file.
+      # Bear with me, I imagine we can combine this tool with pallet patcher somehow to:
+      # 
+      # 1. Get the dependencies either from local sources / git repos, to a specific "deps" folder
+      # 2. Make them available to a custom "local" registry before running colcon / cargo
+      #
+      # TBD
+      
+      - name: Dependencies fetcher
+        run: |
+          ls -la
+          cd $GITHUB_WORKSPACE/bundler_tool
+          ls -la
+          cargo vendor --manifest-path Cargo.toml $GITHUB_WORKSPACE/my-testing-app/deps
+          ls -la $GITHUB_WORKSPACE/my-testing-app/deps
+
+      - name: Check and Build our main app
+        run: |
+          cd $GITHUB_WORKSPACE/my-testing-app
+          ls -la
+          cargo check
+          cargo build --verbose
