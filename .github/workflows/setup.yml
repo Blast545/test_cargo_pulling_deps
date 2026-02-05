@@ -1,4 +1,4 @@
-name: Rust CI
+name: Test automatic selection of deps
 
 on:
   push:
@@ -20,49 +20,70 @@ jobs:
       - name: Checkout this repo
         uses: actions/checkout@v4
         with:
-          path: my-testing-app
+          path: src/my-testing-app
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pallet-patcher from dev branch
+        run: |
+          pip install git+https://github.com/cottsay/pallet-patcher.git@blast545/smarter_pallet_patcher
+          pallet-patcher -h
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      # Make the source code of the dependencies available locally
-      - name: Checkout deps code (one specific dep)
-        uses: actions/checkout@v4
-        with:
-          repository: Blast545/my-rust-utils-pkg
-          path: my-rust-utils-pkg
+      # We want to demonstrate how pallet-patcher will
+      # install dependencies from the workspace, system crates
+      # and later default to crates.io
 
-      # Feth the "bundler tool". This is just a hack to show that we can mix crates.io deps
-      # with local dependencies
-      - name: Checkout bundler
-        uses: actions/checkout@v4
-        with:
-          repository: Blast545/bundler_tool # Replace with actual owner/repo
-          path: bundler_tool
+      # For this workflow, we will download
+      # tokio in this workspace. Also make it available via system crates.
+      # serde will be available via system crates.
+      # crc32fast will not be available.
+      # In this scenario, pallet-patcher will configure/prepare cargo.
+      # so it gets serde from the workspace, tokio from system crates and crc32fast from crates.io.
+      # Changes will be saved to config.toml in this scenario
 
-
-      ## ***Fetching local dependencies into deps***
-      # I'm using this "bundler tool" to "fetch" the repos locally into the workspace of our target application
-      # Currently this is hardcoded in the [dependencies] of the bundler manifest file.
-      # Bear with me, I imagine we can combine this tool with pallet patcher somehow to:
-      # 
-      # 1. Get the dependencies either from local sources / git repos, to a specific "deps" folder
-      # 2. Make them available to a custom "local" registry before running colcon / cargo
-      #
-      # TBD
-      
-      - name: Dependencies fetcher
+      - name: Install system crates
         run: |
-          set -x
-          cd $GITHUB_WORKSPACE/bundler_tool
-          ls -la
-          ls -la /home/runner
-          cargo vendor --manifest-path Cargo.toml $GITHUB_WORKSPACE/my-testing-app/deps
-          ls -la $GITHUB_WORKSPACE/my-testing-app/deps
+          sudo apt-get install librust-serde-dev librust-tokio-dev
 
-      - name: Check and Build our main app
+      - name: Install a crate into our workspace
         run: |
-          cd $GITHUB_WORKSPACE/my-testing-app
-          ls -la
-          cargo check
-          cargo build --verbose
+          mkdir -p $GITHUB_WORKSPACE/src/deps
+          cargo install cargo-download
+          cargo download tokio==1.49.0 > tokio.gz
+          tar -xvf tokio.gz -C $GITHUB_WORKSPACE/src/deps
+          rm tokio.gz
+
+      - name: Run pallet-patcher on our project
+        run: |
+          ls
+          ls $GITHUB_WORKSPACE/src/
+          cd $GITHUB_WORKSPACE/src/test_cargo_pulling_deps
+          pallet-patcher --output-format toml Cargo.toml $GITHUB_WORKSPACE/src/deps/
+          pallet-patcher --output-format toml Cargo.toml $GITHUB_WORKSPACE/src/deps/ >> .cargo/config.toml
+
+      - name: Check the contents of our .cargo/toml
+        run: |
+          cat $GITHUB_WORKSPACE/src/deps/test_cargo_pulling_deps/.cargo/config.toml
+
+      - name: cargo build
+        run: |
+          cd $GITHUB_WORKSPACE/src/deps/test_cargo_pulling_deps/
+          cargo build -vv
+
+      # This will show that only affected part of the tree gets rebuilt
+      - name: Modify a workspace dep, and re-build our workspace
+        run: |
+          ls $GITHUB_WORKSPACE/src/deps/test_cargo_pulling_deps/tokio-1.49.0/src
+          echo "/// Random Rust comment" >> $GITHUB_WORKSPACE/src/deps/test_cargo_pulling_deps/tokio-1.49.0/src/lib.rs
+          cd $GITHUB_WORKSPACE/src/deps/test_cargo_pulling_deps/
+          cargo build -vv
+
+      - name: Show Cargo.lock file
+        run: |
+          cat $GITHUB_WORKSPACE/src/deps/test_cargo_pulling_deps/Cargo.lock

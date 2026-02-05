@@ -1,9 +1,66 @@
-[registries]
-my-curated-ros-registry = { index = "https://non-existent-intranet:8080/git/index" }
+#### All these registries entries are useless unless
+#### we decide to make some sort of patch that creates a new Cargo.toml file
+#### And we specify entries in the registry of each individual dependency
 
-[source.my-curated-ros-registry]
-registry = "https://non-existent-intranet:8080/git/index"
-replace-with = "local-mirror"
+## [registries]
+## my-system-registry = { index = "https://non-existent-intranet:8080/git/index" }
+##
+## [source.my-system-registry]
+## registry = "https://non-existent-intranet:8080/git/index"
+## replace-with = "platform-crates"
+##
+## [source.platform-crates]
+## directory = "/usr/share/cargo/registry/"
 
-[source.local-mirror]
-directory = "deps"
+
+#### Net access was used to test whether one can build a project without crates.io
+#### as we have every local dependency. Funny thing, we also need to make every optional
+#### dependency available too. OR rely on crates.io to fill Cargo.lock at least once with
+#### the information of where to find optional deps (even when those are not used!!!)
+#### See: https://github.com/rust-lang/cargo/issues/4544
+
+## [net]
+## offline = true              # do not access the network
+
+
+#### With pallet-patcher as it is, we can fetch from our local workspace and system crates
+#### [patch.'crates-io'.'cfg-if~1.0.0']
+#### package = 'cfg-if'
+#### path = '/usr/share/cargo/registry/cfg-if-1.0.0'
+####
+#### [patch.'crates-io'.'crc32fast~1.3.2']
+#### package = 'crc32fast'
+#### path = '/usr/share/cargo/registry/crc32fast-1.3.2'
+####
+#### [patch.'crates-io'.'pin-project-lite~0.2.13']
+#### package = 'pin-project-lite'
+#### path = '/usr/share/cargo/registry/pin-project-lite-0.2.13'
+####
+#### [patch.'crates-io'.'proc-macro2~1.0.76']
+#### package = 'proc-macro2'
+#### path = '/usr/share/cargo/registry/proc-macro2-1.0.76'
+####
+#### [patch.'crates-io'.'quote~1.0.35']
+#### package = 'quote'
+#### path = '/usr/share/cargo/registry/quote-1.0.35'
+####
+#### [patch.'crates-io'.'serde_derive~1.0.195']
+#### package = 'serde_derive'
+#### path = '/usr/share/cargo/registry/serde_derive-1.0.195'
+####
+#### [patch.'crates-io'.'serde~1.0.195']
+#### package = 'serde'
+#### path = '/usr/share/cargo/registry/serde-1.0.195'
+####
+#### [patch.'crates-io'.'syn~2.0.48']
+#### package = 'syn'
+#### path = '/usr/share/cargo/registry/syn-2.0.48'
+####
+#### [patch.'crates-io'.'tokio~1.49.0']
+#### package = 'tokio'
+#### path = '/home/misato/cargo_in_the_buildfarm/test_cargo_local/src/deps/tokio-1.49.0'
+####
+#### [patch.'crates-io'.'unicode-ident~1.0.12']
+#### package = 'unicode-ident'
+#### path = '/usr/share/cargo/registry/unicode-ident-1.0.12'
+
