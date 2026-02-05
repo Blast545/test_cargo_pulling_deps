@@ -1,0 +1,95 @@
+name: Test automatic selection of deps
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-24.04
+
+    steps:
+
+      # Code of this repo
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+        with:
+          path: src/my-testing-app
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install pallet-patcher from dev branch
+        run: |
+          pip install git+https://github.com/cottsay/pallet-patcher.git@blast545/smarter_pallet_patcher
+          pallet-patcher -h
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # We want to demonstrate how pallet-patcher will
+      # install dependencies from the workspace, system crates
+      # and later default to crates.io
+
+      # For this workflow, we will download
+      # tokio in this workspace. Also make it available via system crates.
+      # serde will be available via system crates.
+      # crc32fast will not be available.
+      # In this scenario, pallet-patcher will configure/prepare cargo.
+      # so it gets serde from the workspace, tokio from system crates and crc32fast from crates.io.
+      # Changes will be saved to config.toml in this scenario
+
+      - name: Install system crates
+        run: |
+          sudo apt-get install librust-serde-dev librust-tokio-dev
+
+      - name: Install a crate into our workspace
+        run: |
+          # Install tokio
+          mkdir -p $GITHUB_WORKSPACE/src/deps
+          cargo install cargo-download
+          cargo download tokio==1.49.0 > tokio.gz
+          tar -xvf tokio.gz -C $GITHUB_WORKSPACE/src/deps
+          rm tokio.gz
+
+          # Install serde 0.9
+          cargo download serde==0.9.15 > serde.gz
+          tar -xvf serde.gz -C $GITHUB_WORKSPACE/src/deps
+          rm serde.gz
+
+      - name: Run pallet-patcher on our project
+        run: |
+          ls
+          ls $GITHUB_WORKSPACE/src/
+          cd $GITHUB_WORKSPACE/src/my-testing-app
+          pallet-patcher --output-format toml Cargo.toml $GITHUB_WORKSPACE/src/deps/
+          pallet-patcher --output-format toml Cargo.toml $GITHUB_WORKSPACE/src/deps/ >> .cargo/config.toml
+
+      - name: Check the contents of our .cargo/toml
+        run: |
+          cat $GITHUB_WORKSPACE/src/my-testing-app/.cargo/config.toml
+
+      - name: cargo build
+        run: |
+          cd $GITHUB_WORKSPACE/src/my-testing-app/
+          cargo build -vv
+
+      # This will show that only affected part of the tree gets rebuilt
+      - name: Modify a workspace dep, and re-build our workspace
+        run: |
+          ls $GITHUB_WORKSPACE/src/deps/tokio-1.49.0/src
+          echo "// this comment does nothing and is totally fine" >> $GITHUB_WORKSPACE/src/deps/tokio-1.49.0/src/lib.rs
+          cd $GITHUB_WORKSPACE/src/my-testing-app/
+          cargo build -vv
+
+      - name: Show Cargo.lock file
+        run: |
+          cat $GITHUB_WORKSPACE/src/my-testing-app/Cargo.lock

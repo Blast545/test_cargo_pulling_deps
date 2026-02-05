@@ -20,5 +20,5 @@ target
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# Disable dependencies that will be created using our bundler tool
-deps
+# Disable Cargo.lock, for the sake of generating its contents in the CI workflow
+Cargo.lock
