@@ -69,21 +69,21 @@ jobs:
 
       - name: Check the contents of our .cargo/toml
         run: |
-          cat $GITHUB_WORKSPACE/src/deps/my-testing-app/.cargo/config.toml
+          cat $GITHUB_WORKSPACE/src/my-testing-app/.cargo/config.toml
 
       - name: cargo build
         run: |
-          cd $GITHUB_WORKSPACE/src/deps/my-testing-app/
+          cd $GITHUB_WORKSPACE/src/my-testing-app/
           cargo build -vv
 
       # This will show that only affected part of the tree gets rebuilt
       - name: Modify a workspace dep, and re-build our workspace
         run: |
-          ls $GITHUB_WORKSPACE/src/deps/my-testing-app/tokio-1.49.0/src
-          echo "/// Random Rust comment" >> $GITHUB_WORKSPACE/src/deps/my-testing-app/tokio-1.49.0/src/lib.rs
-          cd $GITHUB_WORKSPACE/src/deps/my-testing-app/
+          ls $GITHUB_WORKSPACE/src/deps/tokio-1.49.0/src
+          echo "/// Random Rust comment" >> $GITHUB_WORKSPACE/src/deps/tokio-1.49.0/src/lib.rs
+          cd $GITHUB_WORKSPACE/src/my-testing-app/
           cargo build -vv
 
       - name: Show Cargo.lock file
         run: |
-          cat $GITHUB_WORKSPACE/src/deps/my-testing-app/Cargo.lock
+          cat $GITHUB_WORKSPACE/src/my-testing-app/Cargo.lock
