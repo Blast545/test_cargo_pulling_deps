@@ -53,11 +53,17 @@ jobs:
 
       - name: Install a crate into our workspace
         run: |
+          # Install tokio
           mkdir -p $GITHUB_WORKSPACE/src/deps
           cargo install cargo-download
           cargo download tokio==1.49.0 > tokio.gz
           tar -xvf tokio.gz -C $GITHUB_WORKSPACE/src/deps
           rm tokio.gz
+
+          # Install serde 0.9
+          cargo download serde==0.9.15 > serde.gz
+          tar -xvf serde.gz -C $GITHUB_WORKSPACE/src/deps
+          rm serde.gz
 
       - name: Run pallet-patcher on our project
         run: |
