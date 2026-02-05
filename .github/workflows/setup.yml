@@ -86,7 +86,7 @@ jobs:
       - name: Modify a workspace dep, and re-build our workspace
         run: |
           ls $GITHUB_WORKSPACE/src/deps/tokio-1.49.0/src
-          echo "/// Random Rust comment" >> $GITHUB_WORKSPACE/src/deps/tokio-1.49.0/src/lib.rs
+          echo "// this comment does nothing and is totally fine" >> $GITHUB_WORKSPACE/src/deps/tokio-1.49.0/src/lib.rs
           cd $GITHUB_WORKSPACE/src/my-testing-app/
           cargo build -vv
 
